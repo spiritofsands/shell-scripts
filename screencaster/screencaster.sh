@@ -72,7 +72,7 @@ sanity_check() {
     exit 1
   fi
 
-  if [[ "$frame_rate" -lt 0 ]]; then
+  if [[ "$fps" -lt 0 ]]; then
     echo "Framerate should be > 0"
     exit 1
   fi
@@ -98,7 +98,8 @@ sanity_check() {
 }
 
 get_resolution() {
-  local str="$(xdpyinfo | grep dimensions)"
+  local str
+  str="$(xdpyinfo | grep dimensions)"
   str="${str##*\    }"
   echo "${str%% *}"
 }
@@ -108,29 +109,38 @@ get_screencast_filename() {
 }
 
 start_recording() {
+  local screen_resolution
+  local ffmpeg_cmd
+  local ffmpeg_pid
+
   cleanup
 
   echo $$ > "$screencaster_lockfile"
 
-  local screen_resolution="$(get_resolution)"
-  local ffmpeg_cmd="$ffmpeg_exec  -loglevel quiet -f x11grab -framerate $fps -video_size $screen_resolution -i $DISPLAY -vcodec libx264 -preset ultrafast $save_path/$(get_screencast_filename)"
+  screen_resolution="$(get_resolution)"
+  ffmpeg_cmd="$ffmpeg_exec  -loglevel quiet -f x11grab -framerate $fps -video_size $screen_resolution -i $DISPLAY -vcodec libx264 -preset ultrafast $save_path/$(get_screencast_filename)"
 
   $ffmpeg_cmd &
-  local ffmpeg_pid=$!
+  ffmpeg_pid=$!
 
   echo "$ffmpeg_pid" > "$ffmpeg_lockfile"
 }
 
 stop_recording() {
-  local stopped_something=0
+  local stopped_something
+  local screencaster_pid
+  local ffmpeg_pid
+
+  stopped_something=0
+
   if [[ -f "$screencaster_lockfile" ]]; then
-    local screencaster_pid="$(cat "$screencaster_lockfile")"
-    kill $screencaster_pid
+    screencaster_pid="$(cat "$screencaster_lockfile")"
+    kill "$screencaster_pid"
     stopped_something=1
   fi
 
   if [[ -f "$ffmpeg_lockfile" ]]; then
-    local ffmpeg_pid="$(cat "$ffmpeg_lockfile")"
+    ffmpeg_pid="$(cat "$ffmpeg_lockfile")"
     kill -2 "$ffmpeg_pid"
     stopped_something=1
   fi
@@ -154,12 +164,14 @@ cleanup() {
 }
 
 is_recording() {
+  local ffmpeg_pid
+
   if [[ ! -f "$ffmpeg_lockfile" ]]; then
     return 1
   else
-    local ffmpeg_pid="$(cat "$ffmpeg_lockfile")"
+    ffmpeg_pid="$(cat "$ffmpeg_lockfile")"
 
-    if ! ps -p $ffmpeg_pid > /dev/null; then
+    if ! ps -p "$ffmpeg_pid" > /dev/null; then
       return 1
     else
       return 0
@@ -222,8 +234,8 @@ upload_to_googledrive() {
     return 1
   fi
 
-  echo "Uploading to ${googledrive_dirname}${screencasts}"
-  $skicka_exec upload "$save_path" "${googledrive_dirname}${screencasts}"
+  echo "Uploading to $googledrive_dirname/screencasts"
+  $skicka_exec upload "$save_path" "$googledrive_dirname/screencasts"
 }
 
 
@@ -232,12 +244,14 @@ upload_to_googledrive() {
 #
 
 schedule_wakeup() {
-  local day_of_a_week="$(date '+%u')"
+  local day_of_a_week
+  day_of_a_week="$(date '+%u')"
+
   # mon - thu
   if [[ $day_of_a_week -lt 5 ]]; then
     local days_to_monday=1
   else
-    local days_to_monday=$((7 - $day_of_a_week + 1))
+    local days_to_monday=$((7 - day_of_a_week + 1))
   fi
 
   $rtcwake_exec -m no --date "$(date '+%F' -d "+$days_to_monday days") 02:00"
