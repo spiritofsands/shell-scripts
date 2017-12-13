@@ -271,7 +271,7 @@ heartbeat() {
         exit 1
       fi
 
-      place_recording_icon
+      #place_recording_icon
       start_recording
     fi
     sleep "$heartbeat_interval"
@@ -444,9 +444,11 @@ schedule_upload() {
   fi
 
   su "$(logname)" -s /bin/bash -c "$script_path stop"
-  sleep '60s'
+
+  # time for ffmpeg to finish
+  # TODO check
+  sleep '10s'
   su "$(logname)" -s /bin/bash -c "$script_path upload"
-  sleep '60s'
 
   if ! is_cron_task_added; then
     add_cron_task
