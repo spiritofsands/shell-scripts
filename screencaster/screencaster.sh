@@ -504,6 +504,6 @@ case $1 in
     uninstall
     ;;
   *)
-    echo 'Allowed options are: start | stop | upload | uninstall'
+    echo 'Allowed options are: schedule-upload | start | stop | upload | status | uninstall'
     ;;
 esac
