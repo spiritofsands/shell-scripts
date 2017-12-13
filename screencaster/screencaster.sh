@@ -116,6 +116,7 @@ sanity_check() {
 
   if [[ "$failed" -eq 1 ]]; then
     echo 'Exiting...'
+    exit 1
   fi
 
   # Check if not running
