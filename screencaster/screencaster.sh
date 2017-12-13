@@ -46,7 +46,7 @@ find_executable() {
 init_variables() {
   ffmpeg_lockfile="$save_path/.ffmpeg.lock"
   screencaster_lockfile="$save_path/.screencaster.lock"
-  yad_lockfile="$save_path/.yad.lock"
+  #yad_lockfile="$save_path/.yad.lock"
   upload_status_file="$save_path/.upload_status"
   cron_job_path='/etc/cron.d/screencaster-upload'
   script_path="$(readlink -f "$0")"
@@ -56,11 +56,11 @@ init_variables() {
   ffmpeg_exec=''
   skicka_exec=''
   rtcwake_exec=''
-  yad_exec=''
+  #yad_exec=''
   skicka_exec="$(find_executable 'skicka')"
   ffmpeg_exec="$(find_executable 'ffmpeg')"
   rtcwake_exec="$(find_executable 'rtcwake')"
-  yad_exec="$(find_executable 'yad')"
+  #yad_exec="$(find_executable 'yad')"
 }
 
 init_variables
@@ -108,11 +108,11 @@ sanity_check() {
     failed=1
   fi
 
-  if [[ -z "$yad_exec" ]]; then
-    echo "No yad executable. Place it to $PWD/distrib or install systemwide:"
-    echo 'sudo apt install yad'
-    failed=1
-  fi
+  #if [[ -z "$yad_exec" ]]; then
+  #  echo "No yad executable. Place it to $PWD/distrib or install systemwide:"
+  #  echo 'sudo apt install yad'
+  #  failed=1
+  #fi
 
   if [[ "$failed" -eq 1 ]]; then
     echo 'Exiting...'
@@ -149,14 +149,14 @@ any_component_is_running() {
     fi
   fi
 
-  if [[ -f "$yad_lockfile" ]]; then
-    if pid_exists "$(cat "$yad_lockfile")"; then
-      return 0
-    else
-      echo "Removing corrupted lockfile: $yad_lockfile"
-      rm "$yad_lockfile"
-    fi
-  fi
+  #if [[ -f "$yad_lockfile" ]]; then
+  #  if pid_exists "$(cat "$yad_lockfile")"; then
+  #    return 0
+  #  else
+  #    echo "Removing corrupted lockfile: $yad_lockfile"
+  #    rm "$yad_lockfile"
+  #  fi
+  #fi
 
   return 1
 }
@@ -211,9 +211,9 @@ stop_recording_and_finalize() {
     rm "$ffmpeg_lockfile"
   fi
 
-  if kill_yad; then
-    stopped_something=1
-  fi
+  #if kill_yad; then
+  #  stopped_something=1
+  #fi
 
   if [[ $stopped_something -eq 1 ]]; then
     echo 'Stopping recording'
@@ -234,9 +234,9 @@ rm_all_lockfiles() {
     rm "$screencaster_lockfile"
   fi
 
-  if [[ -f "$yad_lockfile" ]]; then
-    rm "$yad_lockfile"
-  fi
+  #if [[ -f "$yad_lockfile" ]]; then
+  #  rm "$yad_lockfile"
+  #fi
 }
 
 pid_exists() {
@@ -327,35 +327,35 @@ upload_to_googledrive() {
 # Interface
 #
 
-recording_icon='/usr/share/icons/Humanity/actions/24/media-record.svg'
-
-kill_yad() {
-  local yad_pid
-  if [[ ! -f "$yad_lockfile" ]]; then
-    return 1
-  fi
-
-  yad_pid="$(cat "$yad_lockfile")"
-
-  if pid_exists "$yad_pid"; then
-    echo "Switching notification"
-    kill "$yad_pid"
-    return 0
-  else
-    return 1
-    echo "Not switching notification"
-  fi
-}
-
-place_recording_icon() {
-  local yad_pid
-
-  kill_yad
-  "$yad_exec" --notification --image="$recording_icon" --text "Recording" --no-middle --command='' --menu="Stop and quit!$0 stop" &>/dev/null &
-  yad_pid=$!
-
-  echo $yad_pid > "$yad_lockfile"
-}
+#recording_icon='/usr/share/icons/Humanity/actions/24/media-record.svg'
+#
+#kill_yad() {
+#  local yad_pid
+#  if [[ ! -f "$yad_lockfile" ]]; then
+#    return 1
+#  fi
+#
+#  yad_pid="$(cat "$yad_lockfile")"
+#
+#  if pid_exists "$yad_pid"; then
+#    echo "Switching notification"
+#    kill "$yad_pid"
+#    return 0
+#  else
+#    return 1
+#    echo "Not switching notification"
+#  fi
+#}
+#
+#place_recording_icon() {
+#  local yad_pid
+#
+#  kill_yad
+#  "$yad_exec" --notification --image="$recording_icon" --text "Recording" --no-middle --command='' --menu="Stop and quit!$0 stop" &>/dev/null &
+#  yad_pid=$!
+#
+#  echo $yad_pid > "$yad_lockfile"
+#}
 
 
 
