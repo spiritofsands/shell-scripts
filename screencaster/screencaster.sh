@@ -51,7 +51,7 @@ init_variables() {
   cron_job_path='/etc/cron.d/screencaster-upload'
   script_path="$(readlink -f "$0")"
   script_dir="$(dirname "$script_path")"
-  heartbeat_interval='5s'
+  heartbeat_interval='60s'
   max_failures_count=5
   ffmpeg_exec=''
   skicka_exec=''
@@ -443,6 +443,11 @@ schedule_upload() {
     return 1
   fi
 
+  su "$(logname)" -s /bin/bash -c "$script_path stop"
+  sleep '60s'
+  su "$(logname)" -s /bin/bash -c "$script_path upload"
+  sleep '60s'
+
   if ! is_cron_task_added; then
     add_cron_task
   fi
@@ -450,8 +455,6 @@ schedule_upload() {
   if ! is_wakeup_scheduled; then
     schedule_wakeup
   fi
-
-  su "$(logname)" -s /bin/bash -c "$script_path upload"
 }
 
 status() {
