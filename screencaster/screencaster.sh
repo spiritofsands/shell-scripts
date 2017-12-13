@@ -56,6 +56,7 @@ init_variables() {
   ffmpeg_exec=''
   skicka_exec=''
   rtcwake_exec=''
+  exiting='no'
   #yad_exec=''
   skicka_exec="$(find_executable 'skicka')"
   ffmpeg_exec="$(find_executable 'ffmpeg')"
@@ -70,6 +71,7 @@ init_variables
 #
 
 on_exit() {
+  exiting='yes'
   echo "Finalizing screencast ($$)"
   trap - SIGINT SIGTERM
   stop_recording_and_finalize
@@ -196,20 +198,36 @@ stop_recording_and_finalize() {
 
   stopped_something=0
 
+  # Some concurrency issues being solved there
+
   if [[ -f "$screencaster_lockfile" ]]; then
     screencaster_pid="$(cat "$screencaster_lockfile")"
-    kill "$screencaster_pid"
-    stopped_something=1
-  fi
 
-  if [[ -f "$ffmpeg_lockfile" ]]; then
-    ffmpeg_pid="$(cat "$ffmpeg_lockfile")"
-    kill -2 "$ffmpeg_pid"
-    stopped_something=1
-  fi
+    # Self-initiated quit
+    if [[ "$screencaster_pid" -eq "$$" ]]; then
+      if [[ -f "$ffmpeg_lockfile" ]]; then
+        ffmpeg_pid="$(cat "$ffmpeg_lockfile")"
+        # exit handler kills ffmpeg, need to be in sync
+        kill -2 "$ffmpeg_pid"
+        stopped_something=1
+      fi
+    else # Explicit quit
+      if pid_exists "$screencaster_pid"; then
+        kill "$screencaster_pid"
+        # Kill blocking sleep
+        pkill -P "$screencaster_pid" sleep
+        stopped_something=1
+      fi
 
-  if [[ -f "$ffmpeg_lockfile" ]]; then
-    rm "$ffmpeg_lockfile"
+      if [[ -f "$ffmpeg_lockfile" ]]; then
+        ffmpeg_pid="$(cat "$ffmpeg_lockfile")"
+        # exit handler kills ffmpeg, need to be in sync
+        echo "Waiting for ffmpeg finalization"
+        while pid_exists "$ffmpeg_pid"; do
+          sleep '1s'
+        done
+      fi
+    fi
   fi
 
   #if kill_yad; then
@@ -262,7 +280,7 @@ is_recording() {
 
 heartbeat() {
   local failures_count=0
-  while true; do
+  while [[ "$exiting" != 'yes' ]]; do
     if ! is_recording; then
       echo 'Starting recording'
 
@@ -314,7 +332,6 @@ upload_to_googledrive() {
   fi
 
   echo "Uploading to $googledrive_dirname$(basename "$save_path")"
-  echo
   if "$skicka_exec" upload "$save_path" "$googledrive_dirname$(basename "$save_path")"; then
     echo "Last upload was at: $(date +"%m.%d.%Y %H:%M:%S")"
   else
@@ -408,7 +425,7 @@ add_cron_task() {
   cat << EOF > "$cron_job_path"
 SHELL=/bin/bash
 PATH=$PATH
-$rand_minute 2 * * 1-5 if [ -x "/etc/cron.daily/$script_path" ]; then /etc/cron.daily/$script_path") start >/dev/null; fi
+$rand_minute 2 * * 1-5 if [ -x "$script_path" ]; then su "$(logname)" -s /bin/bash -c "$script_path upload >/dev/null; systemctl suspend"; fi
 EOF
 
 }
@@ -443,13 +460,6 @@ schedule_upload() {
     echo 'Can not schedule upload: no permissions'
     return 1
   fi
-
-  su "$(logname)" -s /bin/bash -c "$script_path stop"
-
-  # time for ffmpeg to finish
-  # TODO check
-  sleep '10s'
-  su "$(logname)" -s /bin/bash -c "$script_path upload"
 
   if ! is_cron_task_added; then
     add_cron_task
@@ -487,6 +497,8 @@ status() {
 # Main
 #
 
+echo "Started ($$)"
+
 case $1 in
   schedule-upload)
     schedule_upload
@@ -500,6 +512,7 @@ case $1 in
     stop_recording_and_finalize
     ;;
   upload)
+    stop_recording_and_finalize
     sanity_check
     upload_to_googledrive
     ;;
