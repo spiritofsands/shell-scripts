@@ -1,8 +1,8 @@
 #1/bin/bash
 
-if [[ "$HOSTNAME" == 'kos-Inspirion-5565' ]]; then
+if [[ "$HOSTNAME" == 'kos-Inspiron-5565' ]]; then
   # tap
-  xinput set-prop 12 275 1
+  xinput set-prop 'DELL0769:00 06CB:7E92 Touchpad' 'libinput Tapping Enabled' 1
 fi
 
 if [[ "$HOSTNAME" == 'kos-pc' ]]; then
