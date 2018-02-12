@@ -1,4 +1,4 @@
-#1/bin/bash
+#!/bin/bash
 
 if [[ "$HOSTNAME" == 'kos-Inspiron-5565' ]]; then
   xinput set-prop 'DELL0769:00 06CB:7E92 Touchpad' 'libinput Tapping Enabled' 1
