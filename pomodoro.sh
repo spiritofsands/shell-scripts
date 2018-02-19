@@ -46,7 +46,7 @@ runTimer()
 }
 
 while true; do
-    runTimer $workTime 'work'
+    runTimer $workTime 'sprint'
     askContinue 'break'
 
     runTimer $breakTime 'break'
