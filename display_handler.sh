@@ -1,23 +1,33 @@
-#!/bin/sh
+#!/bin/bash
 
 restart_stuff() {
-  killall keynav
-  killall feh
-  keynav
   ~/.fehbg
+  killall keynav
+  sleep 5s
+  keynav
 }
 
-status="$(cat /sys/class/drm/card0-HDMI-A-1/status)"
-echo "$status" >> /home/kos/status.log
+if [[ "$(hostname)" == 'kos-Inspiron-5565' ]]; then
+  laptop='eDP'
+  external='HDMI-A-1'
+elif [[ "$(hostname)" == 'kos-pc' ]];then
+  laptop='LVDS'
+  external='HDMI-0'
+else
+  exit 1
+fi
+
+
+status="$(cat "/sys/class/drm/card0-${external}/status")"
 case "$status" in
   "connected")
-    xrandr --output eDP --off
-    xrandr --output HDMI-A-0 --auto
-    #restart_stuff
+    xrandr --output "$laptop" --off
+    xrandr --output "$external" --auto
+    restart_stuff
     ;;
   "disconnected")
-    xrandr --output HDMI-A-0 --off
-    xrandr --output eDP --auto --fb 1366x768
-    #restart_stuff
+    xrandr --output "$external" --off
+    xrandr --output "$laptop" --auto --fb 1366x768
+    restart_stuff
     ;;
 esac
