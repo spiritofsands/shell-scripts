@@ -10,3 +10,4 @@ ln -s ~/bin/firefox-dev/firefox ~/bin/firefox-dev
 ln -s ~/build/go-builds/bin/shfmt ~/bin/shfmt
 ln -s ~/bin/acpilight/xbacklight ~/bin/xbacklight
 ln -s ~/bin/Hubstaff/HubstaffClient.bin.x86_64 ~/bin/hubstaff
+ln -s ~/bin/styleguide/cpplint/cpplint.py ~/bin/cpplint.py
