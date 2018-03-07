@@ -9,7 +9,7 @@ restart_stuff() {
 
 if [[ "$(hostname)" == 'kos-Inspiron-5565' ]]; then
   laptop='eDP'
-  external='HDMI-A-1'
+  external='HDMI-A-0'
 elif [[ "$(hostname)" == 'kos-pc' ]];then
   laptop='LVDS'
   external='HDMI-0'
@@ -18,7 +18,7 @@ else
 fi
 
 
-status="$(cat "/sys/class/drm/card0-${external}/status")"
+status="$(cat "/sys/class/drm/card0-HDMI-A-1/status")"
 case "$status" in
   "connected")
     xrandr --output "$laptop" --off
