@@ -17,4 +17,4 @@ print_mem() {
 ps -eo 'pmem=,pcpu=,vsize=,comm=' | sort -k 1 -nr | head -50 | awk '{print $4}' | sort -u | while read -r cmd; do
   mem="$(smem -t -c pss -P "$cmd" | tail -n 1)"
   echo "$cmd $mem $(print_mem "$mem")"
-done | sort -k 2 -n -r | awk '{$2=""; printf "%-20s %5s %s\n", $1, $3, $4}'
+done | sort -k 2 -n -r | awk '{$2=""; printf "%-20s %7s %s\n", $1, $3, $4}'
