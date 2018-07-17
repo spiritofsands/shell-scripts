@@ -7,7 +7,7 @@ restart_stuff() {
   keynav
 }
 
-if [[ "$(hostname)" == 'kos-Inspiron-5565' ]]; then
+if [[ "$(hostname)" == 'kos-dell-laptop' ]]; then
   laptop='eDP'
   external='HDMI-A-0'
 elif [[ "$(hostname)" == 'kos-pc' ]];then
