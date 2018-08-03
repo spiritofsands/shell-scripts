@@ -7,13 +7,13 @@ breakTime='5'
 
 #==============================================================
 
-title='Pomodoro timer'
+# title='Pomodoro timer'
 
 askExit()
 {
     status=$1
     if [[ $status -ne 0 ]]; then
-        zenity --question --text='Close timer?' --title="$title"
+        # zenity --question --text='Close timer?' --title="$title"
         status=$?
 
         if [[ $status -eq 0 ]]; then
@@ -25,7 +25,7 @@ askExit()
 askContinue()
 {
     subj="$1"
-    zenity --question --text="Continue to $subj?" --title="$title"
+    # zenity --question --text="Continue to $subj?" --title="$title"
 
     askExit $?
 }
@@ -34,22 +34,25 @@ runTimer()
 {
     time=$(( $1 * 60 ))
     subj=$2
-    timeSeq="$( seq 1 $time )"
-    for i in $timeSeq; do
-        sleep '1s'
-        echo $(( $i * 100 / $time ))
-    done | zenity --progress --auto-close --text="${subj^} time" --title="$title"
 
-    askExit $?
+    notify-send "Started" "${subj^}"
 
-    notify-send "${subj^} is over"
+    sleep $time
+    # timeSeq="$( seq 1 $time )"
+    # for i in $timeSeq; do
+    #     sleep '1s'
+    #     echo $(( i * 100 / time ))
+    # done | zenity --progress --auto-close --text="${subj^} time" --title="$title"
+
+    # askExit $?
+
+    notify-send "Finished" "${subj^}"
 }
 
 while true; do
     runTimer $workTime 'sprint'
-    askContinue 'break'
+    # askContinue 'break'
 
     runTimer $breakTime 'break'
-    askContinue 'work'
+    # askContinue 'work'
 done
-#
