@@ -10,9 +10,6 @@ restart_stuff() {
 if [[ "$(hostname)" == 'kos-dell-laptop' ]]; then
   laptop='eDP'
   external='HDMI-A-0'
-elif [[ "$(hostname)" == 'kos-pc' ]];then
-  laptop='LVDS'
-  external='HDMI-0'
 else
   exit 1
 fi
