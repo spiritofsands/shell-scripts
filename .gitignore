@@ -21,3 +21,9 @@ n
 n-dir/
 yarn-v1.6.0
 android-platform-tools/
+bash-language-server
+bazel
+cpplint
+repo
+birdtray
+local
