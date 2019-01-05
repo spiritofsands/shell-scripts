@@ -34,7 +34,6 @@ setDefaults() {
     good_color="1;32"
     middle_color="1;33"
     warn_color="0;31"
-    connected=0
     battery_path=/sys/class/power_supply/BAT*
 }
 
@@ -45,14 +44,14 @@ battery_charge() {
     case $(uname -s) in
         "Darwin")
             if ((pmset_on)) && command -v pmset &>/dev/null; then
-                if [ "$(pmset -g batt | grep -o 'AC Power')" ]; then
+                if pmset -g batt | grep -oq 'AC Power'; then
                     BATT_CONNECTED=1
                 else
                     BATT_CONNECTED=0
                 fi
                 BATT_PCT=$(pmset -g batt | grep -o '[0-9]*%' | tr -d %)
             else
-                while read key value; do
+                while read -r key value; do
                     case $key in
                         "MaxCapacity")
                             maxcap=$value
@@ -61,7 +60,7 @@ battery_charge() {
                             curcap=$value
                             ;;
                         "ExternalConnected")
-                            if [ $value == "No" ]; then
+                            if [[ "$value" == "No" ]]; then
                                 BATT_CONNECTED=0
                             else
                                 BATT_CONNECTED=1
@@ -83,18 +82,18 @@ battery_charge() {
                     ;;
                 *)
                     battery_state=$(cat $battery_path/status)
-                    battery_full=$battery_path/charge_full
-                    battery_current=$battery_path/charge_now
+                    battery_full=$battery_path/energy_full
+                    battery_current=$battery_path/energy_now
                     ;;
             esac
-            if [ $battery_state == 'Discharging' ]; then
+            if [ "$battery_state" == 'Discharging' ]; then
                 BATT_CONNECTED=0
             else
                 BATT_CONNECTED=1
             fi
                 now=$(cat $battery_current)
                 full=$(cat $battery_full)
-                BATT_PCT=$((100 * $now / $full))
+                BATT_PCT=$((100 * now / full))
             ;;
     esac
 }
@@ -150,7 +149,7 @@ print_status() {
         barlength=${#ascii_bar}
 
         # Battery percentage rounded to the lenght of ascii_bar
-        rounded_n=$(( $barlength * $BATT_PCT / 100 + 1))
+        rounded_n=$(( barlength * BATT_PCT / 100 + 1))
 
         # Creates the bar
         GRAPH=$(printf "[%-${barlength}s]" "${ascii_bar:0:rounded_n}")
@@ -161,7 +160,7 @@ print_status() {
     elif ((output_zsh)); then
         printf "%%B%s%s %s" "$COLOR" "[$BATT_PCT%%]" "$GRAPH"
     else
-        printf "\e[0;%sm%s %s \e[m\n"  "$COLOR" "[$BATT_PCT%]"  "$GRAPH"
+        printf "\\e[0;%sm%s %s \\e[m\\n"  "$COLOR" "[$BATT_PCT%]"  "$GRAPH"
     fi
 }
 
@@ -199,11 +198,11 @@ while getopts ":g:m:w:tzeab:p" opt; do
             pmset_on=1
             ;;
         b)
-            if [ -d $OPTARG ]; then
+            if [ -d "$OPTARG" ]; then
                 battery_path=$OPTARG
             else
                 >&2 echo "Battery not found, trying to use default path..."
-                if [ ! -d $battery_path ]; then
+                if [ ! -d "$battery_path" ]; then
                     >&2 echo "Default battery path is also unreachable"
                     exit 1
                 fi
