@@ -14,18 +14,9 @@ if [[ ! -f "$TMPBG" ]]; then
         -vframes 1 "$TMPBG" -loglevel quiet
 fi
 
-pgrep compton > /dev/null
-readonly COMPTON_WAS_LAUNCHED=$?
-if [[ "$COMPTON_WAS_LAUNCHED" == 0 ]]; then
-    pkill compton
-fi
-
-i3lock --nofork --image="$TMPBG"
-
-if [[ "$COMPTON_WAS_LAUNCHED" == 0 ]]; then
-    compton &
-    disown
-fi
+i3lock --image="$TMPBG"
 
 # delete $TYPE images older tnan 30 days
 find /tmp/ -name "*.$TYPE" -mtime +30 -type f -delete 2>/dev/null
+
+exit 0
