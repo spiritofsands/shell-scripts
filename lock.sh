@@ -1,6 +1,6 @@
 #!/bin/bash
 
-readonly BG="$(grep -oP "(?<=').*(?=')" ~/.fehbg)"
+readonly BG="$(sed -e "s/feh.* '//" -e "s/' *$//" < <(tail -1 ~/.fehbg))"
 readonly LOCK=$HOME/bin/.lock.png
 readonly RES=$(xrandr | grep 'current' | sed -E 's/.*current\s([0-9]+)\sx\s([0-9]+).*/\1x\2/')
 readonly TYPE='png'
