@@ -1,131 +1,50 @@
 #!/bin/bash
 
-usage() {
-cat <<EOF
-battery usage:
-  general:
-    -h, --help    print this message
-    -t            output tmux status bar format
-    -z            output zsh prompt format
-    -e            don't output the emoji
-    -a            output ascii instead of spark
-    -b            battery path            default: /sys/class/power_supply/BAT0
-    -p            use pmset (more accurate)
-  colors:                                                 tmux     zsh
-    -g <color>    good battery level      default: 1;32 | green  | 64
-    -m <color>    middle battery level    default: 1;33 | yellow | 136
-    -w <color>    warn battery level      default: 0;31 | red    | 160
-EOF
-}
-
-if [[ $1 == '-h' || $1 == '--help' || $1 == '-?' ]]; then
-    usage
-    exit 0
-fi
-
 # For default behavior
 setDefaults() {
-    pmset_on=0
     output_tmux=0
-    output_zsh=0
-    ascii=0
-    ascii_bar='=========='
-    emoji=1
     good_color="1;32"
     middle_color="1;33"
     warn_color="0;31"
-    battery_path=/sys/class/power_supply/BAT*
 }
 
 setDefaults
 
 # Determine battery charge state
 battery_charge() {
-    case $(uname -s) in
-        "Darwin")
-            if ((pmset_on)) && command -v pmset &>/dev/null; then
-                if pmset -g batt | grep -oq 'AC Power'; then
-                    BATT_CONNECTED=1
-                else
-                    BATT_CONNECTED=0
-                fi
-                BATT_PCT=$(pmset -g batt | grep -o '[0-9]*%' | tr -d %)
-            else
-                while read -r key value; do
-                    case $key in
-                        "MaxCapacity")
-                            maxcap=$value
-                            ;;
-                        "CurrentCapacity")
-                            curcap=$value
-                            ;;
-                        "ExternalConnected")
-                            if [[ "$value" == "No" ]]; then
-                                BATT_CONNECTED=0
-                            else
-                                BATT_CONNECTED=1
-                            fi
-                            ;;
-                    esac
-                    if [[ -n "$maxcap" && -n $curcap ]]; then
-                        BATT_PCT=$(( 100 * curcap / maxcap))
-                    fi
-                done < <(ioreg -n AppleSmartBattery -r | grep -o '"[^"]*" = [^ ]*' | sed -e 's/= //g' -e 's/"//g' | sort)
-            fi
-            ;;
-        "Linux")
-            case $(cat /etc/*-release) in
-                *"Arch Linux"*|*"Ubuntu"*|*"openSUSE"*)
-                    battery_state=$(cat $battery_path/energy_now)
-                    battery_full=$battery_path/energy_full
-                    battery_current=$battery_path/energy_now
-                    now=$(cat $battery_current)
-                    full=$(cat $battery_full)
-                    BATT_PCT=$((100 * now / full))
-                    ;;
-                *)
-                    battery_state=$(cat $battery_path/status)
-                    battery_current=$battery_path/capacity
-                    BATT_PCT=$(cat $battery_current)
-                    ;;
-            esac
-            if [ "$battery_state" == 'Discharging' ]; then
-                BATT_CONNECTED=0
-            else
-                BATT_CONNECTED=1
-            fi
-            ;;
-    esac
+    battery_path=/sys/class/power_supply/BAT*
+    battery_state=$(cat $battery_path/status)
+    battery_current=$battery_path/capacity
+    BATT_PCT=$(cat $battery_current)
+    if [ "$battery_state" != 'Discharging' ]; then
+        battery_state=' (on AC)'
+    else
+        battery_state=''
+    fi
 }
 
 # Apply the correct color to the battery status prompt
 apply_colors() {
     # Green
-    if [[ $BATT_PCT -ge 75 ]]; then
+    if [[ $BATT_PCT -ge 50 ]]; then
         if ((output_tmux)); then
             COLOR="#[fg=$good_color]"
-        elif ((output_zsh)); then
-            COLOR="%F{$good_color}"
         else
             COLOR=$good_color
         fi
 
     # Yellow
-    elif [[ $BATT_PCT -ge 25 ]] && [[ $BATT_PCT -lt 75 ]]; then
+    elif [[ $BATT_PCT -ge 20 ]] && [[ $BATT_PCT -lt 50 ]]; then
         if ((output_tmux)); then
             COLOR="#[fg=$middle_color]"
-        elif ((output_zsh)); then
-            COLOR="%F{$middle_color}"
         else
             COLOR=$middle_color
         fi
 
     # Red
-    elif [[ $BATT_PCT -lt 25 ]]; then
+    elif [[ $BATT_PCT -lt 20 ]]; then
         if ((output_tmux)); then
             COLOR="#[fg=$warn_color]"
-        elif ((output_zsh)); then
-            COLOR="%F{$warn_color}"
         else
             COLOR=$warn_color
         fi
@@ -134,90 +53,20 @@ apply_colors() {
 
 # Print the battery status
 print_status() {
-    if ((emoji)) && ((BATT_CONNECTED)); then
-        GRAPH="⚡"
-    else
-        if command -v spark &>/dev/null; then
-            sparks=$(spark 0 ${BATT_PCT} 100)
-            GRAPH=${sparks:1:1}
-        else
-            ascii=1
-        fi
-    fi
-
-    if ((ascii)); then
-        barlength=${#ascii_bar}
-
-        # Battery percentage rounded to the lenght of ascii_bar
-        rounded_n=$(( barlength * BATT_PCT / 100 + 1))
-
-        # Creates the bar
-        GRAPH=$(printf "[%-${barlength}s]" "${ascii_bar:0:rounded_n}")
-    fi
-
     if ((output_tmux)); then
-        printf "%s%s %s%s" "$COLOR" "[$BATT_PCT%]" "$GRAPH" "#[default]"
-    elif ((output_zsh)); then
-        printf "%%B%s%s %s" "$COLOR" "[$BATT_PCT%%]" "$GRAPH"
+        printf "%s%s%s" "$COLOR" "BAT: $BATT_PCT%${battery_state}" "#[default]"
     else
-        printf "\\e[0;%sm%s %s \\e[m\\n"  "$COLOR" "[$BATT_PCT%]"  "$GRAPH"
+        printf "\\e[0;%sm%s\\e[m\\n"  "$COLOR" "BAT: $BATT_PCT%${battery_state}"
     fi
 }
 
 # Read args
-while getopts ":g:m:w:tzeab:p" opt; do
-    case $opt in
-        g)
-            good_color=$OPTARG
-            ;;
-        m)
-            middle_color=$OPTARG
-            ;;
-        w)
-            warn_color=$OPTARG
-            ;;
-        t)
+if [[ "${1}" == '-t' ]]; then
             output_tmux=1
             good_color="green"
             middle_color="yellow"
             warn_color="red"
-            ;;
-        z)
-            output_zsh=1
-            good_color="64"
-            middle_color="136"
-            warn_color="160"
-            ;;
-        e)
-            emoji=0
-            ;;
-        a)
-            ascii=1
-            ;;
-        p)
-            pmset_on=1
-            ;;
-        b)
-            if [ -d "$OPTARG" ]; then
-                battery_path=$OPTARG
-            else
-                >&2 echo "Battery not found, trying to use default path..."
-                if [ ! -d "$battery_path" ]; then
-                    >&2 echo "Default battery path is also unreachable"
-                    exit 1
-                fi
-            fi
-            ;;
-        \?)
-            echo "Invalid option: -$OPTARG"
-            exit 1
-            ;;
-        :)
-            echo "Option -$OPTARG requires an argument"
-            exit 1
-            ;;
-    esac
-done
+fi
 
 battery_charge
 apply_colors
