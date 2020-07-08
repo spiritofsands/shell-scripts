@@ -57,16 +57,18 @@ to_bytes(){
     multiplier[G]=3
     multiplier[Gi]=3
     multiplier[M]=2
+    multiplier[Mi]=2
     multiplier[K]=1
     multiplier[Ki]=1
     multiplier[B]=1/1024
+    multiplier[Bi]=1/1024
 
-    if [[ "$postfix" == 'Gi' || "$postfix" == 'G' || "$postfix" == 'M' || "$postfix" == 'Ki' || "$postfix" == 'K' || "$postfix" == 'B' ]]; then
-        current_multiplier="$((1024 * "${multiplier[$postfix]}"))"
+    if [[ "$postfix" == 'G' || "$postfix" == 'M' || "$postfix" == 'K' || "$postfix" == 'B' ]]; then
+        one=1000
     else
-        echo "unk: $postfix"
-        exit 1
+        one=1024
     fi
+    current_multiplier="$((one * "${multiplier[$postfix]}"))"
 
     bc <<<"scale=2; $number * $current_multiplier"
 }
@@ -104,11 +106,28 @@ mem(){
 space(){
     used="$(df -h | grep '/$' | awk '{print $3}')"
     total="$(df -h | grep '/$' | awk '{print $2}')"
-    echo -n "Used space $(get_percent "$used" "$total")%"
+    echo -n "Rootfs $(get_percent "$used" "$total")%"
+}
+
+disk_usage(){
+    statistics="$(iostat -y -d nvme0n1 1 1 -h | grep nvme0n1)"
+    read_s="$(echo "$statistics" | awk '{print $3}')"
+    write_s="$(echo "$statistics" | awk '{print $4}')"
+    echo -n "R/W ${read_s}/s, ${write_s}/s"
+}
+
+network_usage(){
+    sar -n DEV 1 1
 }
 
 uptime_short(){
     echo -n "$(uptime -p | sed -e 's/up/Uptime/' -e 's/,.*$//')"
+}
+
+os_version(){
+    echo -n "Debian $(cat /etc/debian_version)"
+    echo -n ", KDE Plasma $(plasmashell --version | sed 's/.*\s//')"
+    echo -n ", Linux kernel $(uname -r)"
 }
 
 # call func
