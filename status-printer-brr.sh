@@ -68,7 +68,7 @@ to_bytes(){
     else
         one=1024
     fi
-    current_multiplier="$((one * "${multiplier[$postfix]}"))"
+    current_multiplier="$((one ** "${multiplier[$postfix]}"))"
 
     bc <<<"scale=2; $number * $current_multiplier"
 }
@@ -124,10 +124,54 @@ uptime_short(){
     echo -n "$(uptime -p | sed -e 's/up/Uptime/' -e 's/,.*$//')"
 }
 
-os_version(){
+updates(){
+    mapfile packages -t < <(apt list --upgradable 2>/dev/null | tail -n +2)
+    pkg_number="${#packages[@]}"
+    if [[ "$pkg_number" -gt 0 ]]; then
+        echo -n ", new pkg: $pkg_number"
+    fi
+
+    mapfile wheels -t < <(pip list --outdated --format=freeze)
+    whl_number="${#wheels[@]}"
+    if [[ "$whl_number" -gt 0 ]]; then
+        echo -n ", new whl: $whl_number"
+    fi
+
+    # add
+    # npm outdated
+
+    vim_plugins_dir="$HOME/.vim/plugged"
+    vim_number=0
+    for plugin in "$vim_plugins_dir"/*; do
+        cd "$plugin"
+        git fetch &>/dev/null
+        if git status | grep -q 'Your branch is behind'; then
+            vim_number=$((vim_number + 1))
+        fi
+    done
+    if [[ "$vim_number" -gt 0 ]]; then
+        echo -n ", new vim: $vim_number"
+    fi
+
+    tmux_plugins_dir="$HOME/.tmux/plugins"
+    tmux_number=0
+    for plugin in "$tmux_plugins_dir"/*; do
+        cd "$plugin"
+        git fetch &>/dev/null
+        if git status | grep -q 'Your branch is behind'; then
+            tmux_number=$((tmux_number + 1))
+        fi
+    done
+    if [[ "$tmux_number" -gt 0 ]]; then
+        echo -n ", new tmux: $tmux_number"
+    fi
+}
+
+os_info(){
     echo -n "Debian $(cat /etc/debian_version)"
     echo -n ", KDE Plasma $(plasmashell --version | sed 's/.*\s//')"
     echo -n ", Linux kernel $(uname -r)"
+    updates
 }
 
 # call func
