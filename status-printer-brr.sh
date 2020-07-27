@@ -18,7 +18,7 @@ top_processes(){
         cpu_load="$(echo "$process" | cut -c "${column[$type]}"- | cut -c -5)"
         cpu_load="${cpu_load// /}"
         process_name="$(echo "$process" | cut -c 64-)"
-        process_name="${process_name::12}"
+        process_name="${process_name::6}"
         if [[ ! $cpu_load =~ ^\ +$ ]]; then
             names+=("$process_name")
             loads+=("$cpu_load")
@@ -26,7 +26,7 @@ top_processes(){
         fi
     done
 
-    echo -n "$type: "
+    echo "$type"
     if [[ "$counter" -gt 0 ]]; then
         for ((i=0; i < counter; i++)) do
             echo -n "${names[i]} ${loads[i]}%"
@@ -84,36 +84,42 @@ get_percent(){
 }
 
 load(){
-    echo -n "$(uptime | sed -e 's/.*load average:/Load/' -e 's/,.*//')"
+    echo 'Load'
+    echo -n "$(uptime | sed -e 's/.*load average://' -e 's/,.*//')"
 }
 
 temp(){
-    echo -n "$(sensors | grep 'Package id 0' | sed -e 's/Package id 0: */Temp /' -e 's/ *(.*//')"
+    echo 'Temp'
+    echo -n "$(sensors | grep 'Package id 0' | sed -e 's/Package id 0: *//' -e 's/ *(.*//')"
 }
 
 swap(){
     first="$(free -h | grep 'Swap' | awk '{print $3}')"
     second="$(free -h | grep 'Swap' | awk '{print $2}')"
-    echo -n "Swap $(get_percent "$first" "$second")%"
+    echo 'Swap'
+    echo -n "$(get_percent "$first" "$second")%"
 }
 
 mem(){
     first="$(free -h | grep 'Mem' | awk '{print $3}')"
     second="$(free -h | grep 'Mem' | awk '{print $2}')"
-    echo -n "Mem $(get_percent "$first" "$second")%"
+    echo 'Mem'
+    echo -n "$(get_percent "$first" "$second")%"
 }
 
 space(){
     used="$(df -h | grep '/$' | awk '{print $3}')"
     total="$(df -h | grep '/$' | awk '{print $2}')"
-    echo -n "Rootfs $(get_percent "$used" "$total")%"
+    echo 'Rootfs'
+    echo -n "$(get_percent "$used" "$total")%"
 }
 
 disk_usage(){
     statistics="$(iostat -y -d nvme0n1 1 1 -h | grep nvme0n1)"
     read_s="$(echo "$statistics" | awk '{print $3}')"
     write_s="$(echo "$statistics" | awk '{print $4}')"
-    echo -n "R/W ${read_s}/s, ${write_s}/s"
+    echo 'R/W'
+    echo -n "${read_s}/s, ${write_s}/s"
 }
 
 network_usage(){
@@ -121,20 +127,22 @@ network_usage(){
 }
 
 uptime_short(){
-    echo -n "$(uptime -p | sed -e 's/up/Uptime/' -e 's/,.*$//')"
+    echo 'Uptime'
+    echo -n "$(uptime -p | sed -e 's/up //' -e 's/,.*$//')"
 }
 
 updates(){
+    echo -n 'Updates: '
     mapfile packages -t < <(apt list --upgradable 2>/dev/null | tail -n +2)
     pkg_number="${#packages[@]}"
     if [[ "$pkg_number" -gt 0 ]]; then
-        echo -n ", new pkg: $pkg_number"
+        echo -n "$pkg_number pkg"
     fi
 
     mapfile wheels -t < <(pip list --outdated --format=freeze)
     whl_number="${#wheels[@]}"
     if [[ "$whl_number" -gt 0 ]]; then
-        echo -n ", new whl: $whl_number"
+        echo -n ", $whl_number whl"
     fi
 
     # add
@@ -150,7 +158,7 @@ updates(){
         fi
     done
     if [[ "$vim_number" -gt 0 ]]; then
-        echo -n ", new vim: $vim_number"
+        echo -n ", $vim_number vim"
     fi
 
     tmux_plugins_dir="$HOME/.tmux/plugins"
@@ -163,14 +171,14 @@ updates(){
         fi
     done
     if [[ "$tmux_number" -gt 0 ]]; then
-        echo -n ", new tmux: $tmux_number"
+        echo -n ", $tmux_number tmux"
     fi
 }
 
 os_info(){
     echo -n "Debian $(cat /etc/debian_version)"
     echo -n ", KDE Plasma $(plasmashell --version | sed 's/.*\s//')"
-    echo -n ", Linux kernel $(uname -r)"
+    echo ", Linux kernel $(uname -r)"
     updates
 }
 
