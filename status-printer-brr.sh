@@ -132,17 +132,16 @@ uptime_short(){
 }
 
 updates(){
-    echo -n 'Updates: '
     mapfile packages -t < <(apt list --upgradable 2>/dev/null | tail -n +2)
     pkg_number="${#packages[@]}"
     if [[ "$pkg_number" -gt 0 ]]; then
-        echo -n "$pkg_number pkg"
+        echo -n "$pkg_number pkg "
     fi
 
     mapfile wheels -t < <(pip list --outdated --format=freeze)
     whl_number="${#wheels[@]}"
     if [[ "$whl_number" -gt 0 ]]; then
-        echo -n ", $whl_number whl"
+        echo -n "$whl_number whl "
     fi
 
     # add
@@ -158,7 +157,7 @@ updates(){
         fi
     done
     if [[ "$vim_number" -gt 0 ]]; then
-        echo -n ", $vim_number vim"
+        echo -n "$vim_number vim "
     fi
 
     tmux_plugins_dir="$HOME/.tmux/plugins"
@@ -171,15 +170,20 @@ updates(){
         fi
     done
     if [[ "$tmux_number" -gt 0 ]]; then
-        echo -n ", $tmux_number tmux"
+        echo -n "$tmux_number tmux "
     fi
 }
 
 os_info(){
     echo -n "Debian $(cat /etc/debian_version)"
-    echo -n ", KDE Plasma $(plasmashell --version | sed 's/.*\s//')"
-    echo ", Linux kernel $(uname -r)"
-    updates
+    echo -n ", KDE $(plasmashell --version | sed 's/.*\s//')"
+    echo ", Linux $(uname -r)"
+    updates_str="$(updates)"
+    if [[ -n "$updates_str" ]]; then
+        echo -n "Updates: $updates_str"
+    else
+        echo -n 'Up to date'
+    fi
 }
 
 # call func
