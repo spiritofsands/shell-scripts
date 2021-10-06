@@ -175,7 +175,7 @@ updates(){
 }
 
 os_info(){
-    echo -n "Debian $(cat /etc/debian_version)"
+    echo -n "Ubuntu $(lsb_release -d |  cut -d' ' -f2-)"
     echo -n ", KDE $(plasmashell --version | sed 's/.*\s//')"
     echo ", Linux $(uname -r)"
     updates_str="$(updates)"

@@ -12,6 +12,7 @@ if [ -x /usr/bin/dircolors ]; then
   fi
 
   alias ls='ls --color=auto'
+  alias l='ls'
   alias grep='grep --color=auto'
 fi
 
