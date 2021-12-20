@@ -8,7 +8,7 @@ assert_repo_dir() {
 }
 
 run_repo_sync() {
-    repo sync -j1 --fail-fast 2>&1 | tee >(cat - >&5)
+    repo sync -j1 --fail-fast 2>&1
     return "${PIPESTATUS[0]}"  # return repo error code
 }
 
@@ -95,7 +95,6 @@ main_loop() {
     done
 }
 
-exec 5>&1  # save for non-buffered output
 assert_repo_dir
 main_loop
 print "Success"
