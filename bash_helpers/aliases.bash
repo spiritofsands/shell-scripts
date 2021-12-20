@@ -20,3 +20,4 @@ fi
 alias ':q'='exit'
 
 alias fd=fdfind
+alias ll='ls -alh'

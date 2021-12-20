@@ -88,6 +88,11 @@ load(){
     echo -n "$(uptime | sed -e 's/.*load average://' -e 's/,.*//')"
 }
 
+top_cpu_freq(){
+    echo 'CPU freq'
+    grep "^[c]pu MHz" /proc/cpuinfo | cut -d: -f 2 | sort -r | head -1
+}
+
 temp(){
     echo 'Temp'
     echo -n "$(sensors | grep 'Package id 0' | sed -e 's/Package id 0: *//' -e 's/ *(.*//')"
@@ -118,12 +123,16 @@ disk_usage(){
     statistics="$(iostat -y -d nvme0n1 1 1 -h | grep nvme0n1)"
     read_s="$(echo "$statistics" | awk '{print $3}')"
     write_s="$(echo "$statistics" | awk '{print $4}')"
-    echo 'R/W'
+    echo 'Disk'
     echo -n "${read_s}/s, ${write_s}/s"
 }
 
 network_usage(){
-    sar -n DEV 1 1
+    statistics="$(sar -n DEV 1 1 -h | grep wlp | head -1)"
+    rx="$(echo "$statistics" | awk '{print $4}')"
+    tx="$(echo "$statistics" | awk '{print $5}')"
+    echo 'Network'
+    echo -n "$rx/s, $tx/s"
 }
 
 uptime_short(){
@@ -175,9 +184,8 @@ updates(){
 }
 
 os_info(){
-    echo -n "Ubuntu $(lsb_release -d |  cut -d' ' -f2-)"
-    echo -n ", KDE $(plasmashell --version | sed 's/.*\s//')"
-    echo ", Linux $(uname -r)"
+    echo -n "$(lsb_release -d |  cut -d' ' -f2-)"
+    echo ", $(uname -r)"
     updates_str="$(updates)"
     if [[ -n "$updates_str" ]]; then
         echo -n "Updates: $updates_str"
