@@ -194,5 +194,18 @@ os_info(){
     fi
 }
 
+-h(){
+    echo 'Help:'
+    declare -F | awk '{print $NF}'
+}
+
+check_env(){
+    if ! command -v iostat &>/dev/null; then
+        echo 'No iostat.'
+        echo 'sudo apt install sysstat'
+    fi
+}
+
+check_env
 # call func
 "$arg_1"

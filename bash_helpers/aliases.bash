@@ -21,3 +21,7 @@ alias ':q'='exit'
 
 alias fd=fdfind
 alias ll='ls -alh'
+
+md() {
+    pandoc "$1" | lynx -stdin
+}

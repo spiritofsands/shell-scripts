@@ -16,6 +16,7 @@ fi
 
 pycache_clean() {
     fd -I __pycache__ | xargs rm -rf
+    fd -IH .pytest_cache | xargs rm -rf
 }
 
 alert() {
