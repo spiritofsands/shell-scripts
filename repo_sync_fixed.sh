@@ -27,9 +27,18 @@ get_paths_to_remove() {
     while IFS= read -r line; do
         local path
         path="$line"
-        path="${path##* in }"
-        path="${path%% not found}"
-        echo "$path"
+
+        not_found_regex='.* in .* not found$'
+        uncommited_regex='error: .*: contains uncommitted changes$'
+        if [[ $line =~ $not_found_regex ]]; then
+            path="${path##* in }"
+            path="${path%% not found}"
+            echo "$path"
+        elif [[ $line =~ $uncommited_regex ]]; then
+            path="${path##error: }"
+            path="${path%%: contains uncommitted changes}"
+            echo "$path"
+        fi
     done < <(echo "$repo_sync_output" | grep "error: .* not found")
 }
 
